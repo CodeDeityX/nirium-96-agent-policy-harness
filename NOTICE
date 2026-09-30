@@ -1,0 +1,12 @@
+Nirium #96 agent policy harness — public review candidate.
+
+The included Apache-2.0 LICENSE text and Nirium attribution are preserved from
+the pinned upstream repository. Copyright 2026 Nirium Protocol Contributors
+applies to upstream material; it does not imply that Nirium authored or endorsed
+the new harness additions. The upstream SDK is fetched, not bundled here.
+
+Harness additions and adaptations were prepared for review with OpenAI Codex
+assistance, derived from the G1-R1 predecessor identified in docs/AI_ASSISTANCE.md.
+This public review candidate is prepared under Apache-2.0 for compatibility with upstream.
+No upstream adoption, official hook support, publication or independent audit
+is asserted. Preserve this notice and LICENSE in any review redistribution.

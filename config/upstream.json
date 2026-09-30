@@ -1,0 +1,60 @@
+{
+  "repository": "https://github.com/nirium-protocol/nirium.git",
+  "commit": "96f43ac79df9a19c7783faaefc91b454459139ad",
+  "lockBlob": "9181af76567e7bdd14bb32ad1eee4ab60dfbdb0b",
+  "packageSha256": "f76c42ab1e666e5c1de45850ea9ed31220f11b4a12c6d0dd4bf718e458cb1ab3",
+  "lockSha256": "8271c27f42c7cd41e0e73cdb63b179347c4aa903a0bfa049e697f801b72fe02f",
+  "workflowSha256": "46f51a9cdc02f0496e32ec718278c79b64500459cb4056251229ac4fc87c84e6",
+  "installArgs": [
+    "install",
+    "--no-audit",
+    "--no-fund",
+    "--legacy-peer-deps"
+  ],
+  "node": "22.18.0",
+  "npm": "10.9.3",
+  "platform": "win32",
+  "powershell": "5.1",
+  "resolved": [
+    {
+      "path": ".",
+      "name": "nirium",
+      "version": "0.15.0"
+    },
+    {
+      "path": "node_modules/@stellar/mpp",
+      "name": "@stellar/mpp",
+      "version": "0.7.1"
+    },
+    {
+      "path": "node_modules/@stellar/stellar-sdk",
+      "name": "@stellar/stellar-sdk",
+      "version": "14.6.1"
+    },
+    {
+      "path": "node_modules/@x402/core",
+      "name": "@x402/core",
+      "version": "2.23.0"
+    },
+    {
+      "path": "node_modules/@x402/fetch",
+      "name": "@x402/fetch",
+      "version": "2.23.0"
+    },
+    {
+      "path": "node_modules/@x402/stellar",
+      "name": "@x402/stellar",
+      "version": "2.23.0"
+    },
+    {
+      "path": "node_modules/@x402/stellar/node_modules/@stellar/stellar-sdk",
+      "name": "@stellar/stellar-sdk",
+      "version": "16.2.0"
+    },
+    {
+      "path": "node_modules/typescript",
+      "name": "typescript",
+      "version": "5.9.3"
+    }
+  ]
+}

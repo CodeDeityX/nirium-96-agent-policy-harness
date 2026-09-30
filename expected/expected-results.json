@@ -1,0 +1,234 @@
+{
+  "upstream": {
+    "jest": 56,
+    "node": 2
+  },
+  "existingCount": 25,
+  "freshnessCount": 10,
+  "currentCount": 35,
+  "cases": [
+    {
+      "id": "G1-ALLOW",
+      "expected": "one signer call; cryptographically valid result incorporated into real x402 payment",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-DENY",
+      "expected": "zero signer calls and no paid retry",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-WAIT",
+      "expected": "zero signer calls and no paid retry",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-POLICY-ERROR",
+      "expected": "provider error fails closed",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-TIMEOUT",
+      "expected": "provider never resolves; zero signer calls",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-LATE-ALLOW",
+      "expected": "late ALLOW remains unable to sign after timeout",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-DECISION-BINDING",
+      "expected": "decision A rejected for B; only A signs",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-CONCURRENT-ISOLATION",
+      "expected": "B resolves DENY before A ALLOW; A only signs its exact input",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-CONCURRENT-ALLOW-PAIR",
+      "expected": "two reverse-order ALLOW results stay bound to their own requests",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 2
+    },
+    {
+      "id": "G1-FRACTIONATION",
+      "expected": "confirmed-state fixture 1996/2000 rejects 499; sufficient-capacity control signs",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-SELF-ESCALATION",
+      "expected": "administrative boundary injection DENY, zero signer calls",
+      "scope": "boundary injection of real XDR; exact scheme only expresses transfer; no claim x402Fetch executed admin action",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-SIGNER-ERROR-NO-RETRY",
+      "expected": "one possibly-issued signature; zero retries and no payment payload",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-SIGNATURE-RESULT-INTEGRITY",
+      "expected": "signature over mutated amount rejected; no payment payload",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-SIGNED-NETWORK-TAMPER",
+      "expected": "signature for changed NETWORK cannot enter x402 payload",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-SIGNED-DESTINATION-TAMPER",
+      "expected": "signature for changed DESTINATION cannot enter x402 payload",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-SIGNED-ASSET-TAMPER",
+      "expected": "signature for changed ASSET cannot enter x402 payload",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-SIGNED-NONCE-TAMPER",
+      "expected": "signature for changed NONCE cannot enter x402 payload",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-SIGNED-EXPIRY-TAMPER",
+      "expected": "signature for changed EXPIRY cannot enter x402 payload",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-SIGNED-TREE-TAMPER",
+      "expected": "signature for changed TREE cannot enter x402 payload",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-PREIMAGE-NETWORK-REJECTION",
+      "expected": "preimage from different network fails before signer",
+      "scope": "real x402 captures original XDR; altered preimage injected at adapter boundary",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-PREIMAGE-ACCOUNT-REJECTION",
+      "expected": "transfer.from different from configured signer fails before signer",
+      "scope": "real x402 captures original XDR; altered preimage injected at adapter boundary",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-SIGNER-IDENTITY-CHANGE",
+      "expected": "underlying signer identity change cannot issue authorization",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 0
+    },
+    {
+      "id": "G1-NO-SECRET-FALLBACK",
+      "expected": "DENY has no fallback and mixed signer/secret config rejected",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 0
+    },
+    {
+      "id": "L01",
+      "expected": "two independent preflights see 400 and each sign 300; reservation NOT_SOLVED",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 2
+    },
+    {
+      "id": "L02",
+      "expected": "direct raw signer bypasses DENY wrapper; bypass NOT_SOLVED",
+      "scope": "real Agent/x402 signing path",
+      "signerCalls": 1
+    },
+    {
+      "id": "G1-ALLOW-CURRENT-VERSION",
+      "signerCalls": 1,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-STALE-ALLOW-POLICY-VERSION",
+      "signerCalls": 0,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-ALLOW-EXPIRED",
+      "signerCalls": 0,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-FRESHNESS-SOURCE-ERROR",
+      "signerCalls": 0,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-STALE-ALLOW-CONCURRENT-REVISION",
+      "signerCalls": 1,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-ALLOW-MISSING-POLICYVERSION",
+      "signerCalls": 0,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-ALLOW-MISSING-EXPIRESAT",
+      "signerCalls": 0,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-EXPIRY-DURING-FRESHNESS",
+      "signerCalls": 0,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-FRESHNESS-SOURCE-TIMEOUT",
+      "signerCalls": 0,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    },
+    {
+      "id": "G1-FRESHNESS-SOURCE-INVALID",
+      "signerCalls": 0,
+      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
+      "scope": "real Agent/x402 path with injected freshness and clock"
+    }
+  ],
+  "historical": {
+    "upstream": 58,
+    "g1": 25,
+    "u0": 24,
+    "note": "Predecessor only; no U0 rerun required by public harness"
+  },
+  "limits": {
+    "L01_PENDING_CAPACITY_RESERVATION": "NOT_SOLVED",
+    "L02_OUT_OF_PROCESS_SIGNER_BYPASS": "NOT_SOLVED",
+    "G2_ONCHAIN_ENFORCEMENT": "NOT_RUN",
+    "G3_PENDING_CAPACITY": "NOT_SOLVED",
+    "G4_GOVERNANCE": "NOT_RUN"
+  }
+}
