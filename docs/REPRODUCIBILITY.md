@@ -1,44 +1,48 @@
-# Reproduction contract
+# R2 reproduction contract
 
-Use the prerequisites and one command in README. Git and the official Node
-distribution must be on PATH. The runner uses the npm CLI shipped adjacent to
-node.exe, validates versions, and supplies empty per-run npm user/global configs.
-It clears inherited NODE_OPTIONS/NODE_PATH and harness result paths for child
-processes. Proxy/network restrictions can block preparation; they are not worked
-around by vendoring modules or changing dependencies.
+Modified for R2 delivery repair. Use the exact Node 22.18.0 / npm 10.9.3 pins.
+Windows: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\RUN.ps1
+Linux: node scripts/run.cjs
+The common runner resolves npm from the real Node distribution or a native npm
+symlink on PATH, then checks its version by executing the CLI with that Node.
+Argument arrays are used; no shell command is built from paths.
 
-Git commands explicitly set `core.longpaths=true` for that command only. No
-global Git setting or short original workspace path is required. A first clean
-reproduction exposed Git's Windows path-length limit (checkout returned 0 but
-reported a missing file); that failure is retained in the review evidence. The
-tracked-file hash inventory detected it before installation. The public runner
-now supplies the required long-path mode explicitly.
+Source verification precedes operational config/expected data, platform helper,
+child processes, Git and npm. Node built-ins and scripts/integrity.cjs necessarily
+load first. Small result records are allowed before validation. Source files are
+hashed as raw bytes; runtime never normalizes or regenerates their manifest.
+The first successful check records its digest/count. Final verification requires
+the same digest, and success prints only after result finalization succeeds.
 
-Every run creates a new clone, npm cache and adapter build under `work/<timestamp>`.
-It does not use any previous ZIP, previous clone, global compiler or global npm
-cache. The pinned commit, package/lock/workflow SHA-256 values and resolved package
-versions are checked. The upstream workflow must contain the exact authorized
-install line. The only allowed install lock drift is two root version fields
-from 0.14.1 to 0.15.0. All other dependency changes stop the run.
+Publication scope is every regular file below the source root except the root
+SHA256SUMS.txt and exactly these pruned root trees: .git, work, results,
+node_modules. Other hidden files, helpers and tests remain in scope. Links,
+including Windows junctions, are rejected within the publication tree. Narrow
+exclusions are output/metadata, not a way to omit source. Do not place code there.
+The source manifest is excluded from its own list; its SHA-256 is in results.
 
-The candidate SHA256SUMS covers its source/config/docs and excludes generated
-work/results. Each results folder has a separate manifest. `VERIFY.ps1` can
-check both. A result folder is newly generated even for a failed run; stdout,
-stderr and exit-code JSON are retained. The runner never deletes past results.
+Every run creates a new upstream clone, npm cache and adapter build. Empty npm
+configs and cleared inherited npm/harness/Node overrides prevent accidental reuse.
+Git receives per-command core.autocrlf=false, core.longpaths=true and --no-pager.
+No global tool settings change. The pinned package, lock and workflow are checked
+before the exact authorized npm install --no-audit --no-fund --legacy-peer-deps.
+Only the two documented lock root versions changing 0.14.1 to 0.15.0 are allowed;
+all other drift stops the gate, including Linux-specific differences.
 
-A successful single invocation says RUN_VERDICT=PASS. The separate review
-acceptance verdict additionally requires a second clean-folder invocation of
-the documented command; one run alone is not called independent reproduction.
-Ephemeral keys and random request prefixes vary across runs, so evidence bytes
-differ while IDs, outcomes, signer counts and assertions must match expectations.
+The 58 upstream tests, network guard and 35 G1 cases run unchanged. A successful
+run is local fixture qualification with real cryptographic signing by ephemeral
+unfunded in-memory keys; it is not live-chain acceptance. U0 24 remains historical.
+Compare case IDs, outcomes and signer counts, not random identities or timestamps.
 
-On upstream build/test failure: BLOCKED_UPSTREAM_BASELINE. On dependency access
-failure: NIRIUM_96_PUBLIC_HARNESS_BLOCKED_DEPENDENCY_ACCESS. On G1 failure:
-NIRIUM_96_PUBLIC_HARNESS_BLOCKED_G1. Other stages report their own explicit blocker.
-The runner does not continue into G1 after a failed baseline and never turns a
-failed comparison into PASS.
+Source failure reports SOURCE_INTEGRITY, a category and relative path, nonzero
+exit, and NOT_RUN suites. Other failures retain stage and nonzero status.
+Raw command logs can contain local paths and belong only in private review.
+Finalization failure cannot print success or reset an earlier nonzero status.
+VERIFY checks source and optionally result bytes/verdict; it does not rerun tests.
 
-No source is patched inside Nirium. The runner records tracked-file hashes,
-install-only diff, production-source diff and final status. A worktree containing
-the automatic lock change is not called literally unchanged. The package is a
-public candidate prepared for review, without publication or endorsement.
+R2 qualification freezes all docs/source and the manifest in a local candidate
+commit, verifies staged blob bytes independently, then uses fresh clones with
+core.autocrlf=true and false and an archive without .git. Full Windows and Linux
+runs must come from the same commit. Changed source invalidates earlier evidence.
+WSL is reported independently from generic Linux and is never inferred from a
+container run. Failed attempts are retained in the private review evidence.

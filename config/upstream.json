@@ -13,7 +13,6 @@
   ],
   "node": "22.18.0",
   "npm": "10.9.3",
-  "platform": "win32",
   "powershell": "5.1",
   "resolved": [
     {
@@ -56,5 +55,9 @@
       "name": "typescript",
       "version": "5.9.3"
     }
+  ],
+  "platforms": [
+    "win32",
+    "linux"
   ]
 }

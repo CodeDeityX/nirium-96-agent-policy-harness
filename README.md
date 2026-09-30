@@ -1,4 +1,4 @@
-# Nirium #96: agent policy harness (public candidate R1)
+# Nirium #96: agent policy harness (private R2 repair candidate)
 
 This public review candidate reproduces a bounded agent-side pre-sign policy
 check using the **real installed Nirium/x402 path**. It is not an official Nirium
@@ -7,12 +7,16 @@ by running it. The official supported pre-sign hook remains future maintainer wo
 
 ## One-command reproduction
 
-Prerequisites: Windows x64, Windows PowerShell **5.1**, the official Windows
-Node.js **22.18.0** distribution with its bundled npm **10.9.3**, Git for Windows
-on PATH, and write access to this extracted folder. GitHub and registry.npmjs.org
-must be reachable for preparation. No wallet, credentials, private repository,
-Codex state, previous ZIP or blockchain funds are needed. Other environments
-are not qualified by this candidate; the runner rejects version drift.
+R2 changes delivery integrity and platform launch only. Qualification results belong
+to the separate private review package; this source file does not assert a completed
+Windows, Linux or WSL run. Preserve the source manifest when reproducing.
+
+Prerequisites: Node.js **22.18.0**, npm **10.9.3**, native Git, and write access.
+Windows requires actual Windows PowerShell **5.1**. Linux needs no PowerShell;
+use a native Linux filesystem and native Linux tools (including inside WSL).
+GitHub and registry.npmjs.org must be reachable for preparation. No wallet,
+credentials, private repository, previous ZIP or blockchain funds are needed.
+Versions are checked exactly. No support for every Node 22 or Linux distro is claimed.
 
 From this folder:
 
@@ -20,7 +24,13 @@ From this folder:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\RUN.ps1
 ```
 
-Expect exit 0, `PASS: upstream 58; G1 35 including 10 freshness cases`, and a new
+On Linux, from the candidate folder run:
+
+```sh
+node scripts/run.cjs
+```
+
+For a completed successful regression, expect exit 0, `PASS: upstream 58; G1 35 including 10 freshness cases`, and a new
 `results/<timestamp>/summary.json`. Exit nonzero is a blocker, not a partial PASS.
 Keep failed result folders. The command clones and checks the exact commit,
 verifies source/dependency identity, installs, builds, runs upstream tests,
@@ -54,7 +64,7 @@ memory. No transaction is broadcast. The network guard is an **in-process test
 control**, not an operating-system sandbox against hostile code.
 
 The 25 predecessor G1 cases are retained, including L01/L02 counterexamples.
-Ten new freshness cases bring this candidate to **35 G1 cases**. The historical
+The ten retained freshness cases bring this candidate to **35 G1 cases**. The historical
 58 upstream / 25 G1 / 24 isolated U0 results remain historical; U0 is not rerun
 or counted as integration here. The new upstream baseline is run independently.
 
@@ -104,3 +114,10 @@ For integrity verification, run `powershell.exe -NoProfile -ExecutionPolicy
 Bypass -File .\VERIFY.ps1 -Results .\results\<timestamp>` on one line. Verification
 checks file integrity and recorded verdict; it does not rerun tests. More details:
 [REPRODUCIBILITY](docs/REPRODUCIBILITY.md), [AI assistance](docs/AI_ASSISTANCE.md).
+
+## R2 source integrity
+
+See [R2 repair and trust boundary](docs/R2_REPAIR.md). Run the separate controls
+with `node --test test/integrity.test.cjs`; they do not install dependencies or
+add G1 cases. Run `node scripts/verify.cjs` for raw source verification on Linux.
+An unsigned manifest establishes consistency, not publisher identity.
