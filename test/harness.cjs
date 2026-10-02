@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {AsyncLocalStorage}=require('node:async_hooks');
 const {stellar:S,sdkRequire}=require('../src/runtime.cjs');
-const {createStellarPolicySigner,decode}=require('../src/stellar-policy-signer.cjs');
+const {decode}=require('../src/observe.cjs');
 const ctx=new AsyncLocalStorage();
 const requests=[];
 const networkPassphrase=S.Networks.TESTNET;
@@ -29,6 +29,7 @@ S.rpc.Server.prototype.simulateTransaction=async function(tx){
   const from=S.Address.fromScAddress(call.args()[0].address()).toString();
   const root=new S.xdr.SorobanAuthorizedInvocation({function:S.xdr.SorobanAuthorizedFunction.sorobanAuthorizedFunctionTypeContractFn(call),subInvocations:[]});
   const entry=new S.xdr.SorobanAuthorizationEntry({credentials:S.xdr.SorobanCredentials.sorobanCredentialsAddress(new S.xdr.SorobanAddressCredentials({address:new S.Address(from).toScAddress(),nonce:S.xdr.Int64.fromString(String(++nonce)),signatureExpirationLedger:0,signature:S.xdr.ScVal.scvVoid()})),rootInvocation:root});
+  ctx.getStore()?.mutateAuth?.(entry);
   auth=[entry];
  }
  return {_parsed:true,id:'fixture',latestLedger:100,events:[],minResourceFee:'0',transactionData:new S.SorobanDataBuilder(),result:{auth,retval:S.xdr.ScVal.scvVoid()}};
@@ -65,32 +66,34 @@ globalThis.fetch=async(input,init)=>{
 // Require after network controls. Agent/fetch/client/scheme/build/signAuthEntries
 // are the actual installed implementations, unpatched.
 const {Agent}=sdkRequire('./dist/index.js');
-function makeStore(id){return {id,key:S.Keypair.random(),network:[],decisions:[],calls:0,authorizations:0,signedInputs:[],payloads:[],contexts:[],freshness:[],fallback:0};}
+function makeStore(id){return {id,key:S.Keypair.random(),network:[],decisions:[],calls:0,authorizations:0,signedInputs:[],payloads:[],contexts:[],freshness:[],fallback:0,returned:0,verified:0,observer:[],signerSamples:[],returnedShapes:[],errorDetails:[]};}
 function rawSigner(store,behavior){return {address:store.key.publicKey(),async signAuthEntry(input,opts){
  const active=ctx.getStore();active.calls++;active.signedInputs.push(input);
  assert.equal(opts.address,store.key.publicKey());
+ if(behavior?.throwBefore)throw Error('signer rejected before signature');
  const signingInput=behavior?.mutate?behavior.mutate(input):input;
  const sig=store.key.sign(S.hash(Buffer.from(signingInput,'base64'))).toString('base64');active.authorizations++;
  if(behavior?.throwAfter)throw Error('simulated signer failure after signature');
- return {signedAuthEntry:sig,signerAddress:store.key.publicKey()};
+ active.returned++;const verified=store.key.verify(S.hash(Buffer.from(input,'base64')),Buffer.from(sig,'base64'));if(verified)active.verified++;active.signerSamples.push({verified,now:behavior?.now?.()??1000,address:behavior?.addressAtSign?.()??null});
+ const result={signedAuthEntry:sig,signerAddress:store.key.publicKey()};active.returnedShapes.push({keys:Object.keys(result),signedAuthEntryPresent:true,type:typeof result.signedAuthEntry,nonempty:result.signedAuthEntry.trim().length>0});return result;
  },async signTransaction(){ctx.getStore().fallback++;throw Error('FALLBACK_FORBIDDEN')}};}
+// The compatibility view only renames fields for the historical stimuli. It makes no policy decision.
+function view(c){return {...c,requestId:c.contextHash,authEntry:c.authorization.preimageXdr,account:c.signer,networkPassphrase:c.authorization.networkPassphrase,semantic:decode(c.authorization.preimageXdr,c.signer,c.authorization.networkPassphrase)};}
 function setup(store,evaluate,options={}){
+ store.mutateAuth=options.mutateAuth;
  const raw=rawSigner(store,options);
- const signer=createStellarPolicySigner({signer:raw,networkPassphrase,policyRef:'explicit-owner-fixture',timeoutMs:options.timeoutMs??1000,
- now:options.now??(()=>1000),freshnessTimeoutMs:options.freshnessTimeoutMs??1000,
- currentPolicyVersion:async(c,d)=>{
-  const observation={requestId:c.requestId,policyVersion:d.policyVersion,expiresAt:d.expiresAt};
-  ctx.getStore().freshness.push(observation);
-  try{const version=await (options.currentPolicyVersion??(async()=> 'v7'))(c,d);observation.observedVersion=version;return version}
-  catch(error){observation.error='freshness source error';throw error}
- },evaluate:async c=>{
-  const active=ctx.getStore();active.contexts.push(c);const d=await evaluate(c);active.decisions.push(d?.kind??'invalid');return d;
- }});
+ options.configureRaw?.(raw,store);
+ const policy={requireExpiry:true,now:options.now??(()=>1000),timeoutMs:options.timeoutMs??options.freshnessTimeoutMs??5000,
+ evaluate:async (c,opts)=>{const active=ctx.getStore(),v=view(c);active.contexts.push(v);const d=await evaluate(v,opts);active.decisions.push(d?.decision??'invalid');return d;},
+ currentVersion:async (c,opts)=>{const active=ctx.getStore(),v=view(c);const observation={contextHash:c.contextHash};active.freshness.push(observation);try{const result=await (options.currentPolicyVersion??(async()=> 'v7'))(v,opts);observation.observedVersion=result;return result;}catch(e){observation.error='freshness source error';throw e;}},
+ onDecision:record=>{store.observer.push({outcome:record.outcome,contextHash:record.context?.contextHash,signerCallsAtReport:store.calls,returnedAtReport:store.returned});return options.onDecision?.(record,raw);}};
  const agent=new Agent({apiKey:'non-secret-test-placeholder',baseUrl:'https://backend.invalid'});
- agent.initX402({signer,network:'stellar:testnet',rpcUrl:'https://rpc.invalid'});
- assert.equal(signer.signTransaction,undefined);
- return {agent,signer,raw};
+ agent.initX402({signer:raw,policy,network:'stellar:testnet',rpcUrl:'https://rpc.invalid'});
+ // Private helper is lazy and used ONLY by the network-preimage boundary test.
+ // RPC auth entries do not carry networkId; the real SDK derives it locally.
+ function networkBoundarySigner(){const {createPolicyGatedSigner}=sdkRequire('./dist/x402-policy.js');return createPolicyGatedSigner(raw,policy,()=>({url:'https://merchant.invalid/artificial',method:'GET',requirements:{scheme:'exact',network:'stellar:testnet',asset,payTo,amount:'499',maxTimeoutSeconds:60}}));}
+ return {agent,raw,policy,networkBoundarySigner};
 }
-const decision=(c,kind='ALLOW',fields={})=>({kind,requestId:c.requestId,contextHash:c.contextHash,policyRef:c.policyRef,policyVersion:'v7',expiresAt:2000,...fields});
+const decision=(c,kind='ALLOW',fields={})=>({decision:kind,contextHash:c.contextHash,policyVersion:'v7',expiresAt:2000,...fields});
 const fetchPayment=(agent,amount='499',label='request')=>agent.x402Fetch('https://merchant.invalid/'+label+'?amount='+amount);
 module.exports={S,Agent,ctx,requests,networkPassphrase,asset,payTo,makeStore,setup,decision,fetchPayment,rawSigner,fingerprint};

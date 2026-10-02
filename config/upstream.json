@@ -1,10 +1,10 @@
 {
   "repository": "https://github.com/nirium-protocol/nirium.git",
-  "commit": "96f43ac79df9a19c7783faaefc91b454459139ad",
-  "lockBlob": "9181af76567e7bdd14bb32ad1eee4ab60dfbdb0b",
-  "packageSha256": "f76c42ab1e666e5c1de45850ea9ed31220f11b4a12c6d0dd4bf718e458cb1ab3",
-  "lockSha256": "8271c27f42c7cd41e0e73cdb63b179347c4aa903a0bfa049e697f801b72fe02f",
-  "workflowSha256": "46f51a9cdc02f0496e32ec718278c79b64500459cb4056251229ac4fc87c84e6",
+  "commit": "1dc596932b0b124ad39bb54c4cb00b10c3b08e5e",
+  "lockBlob": "004698e70bcf0add4d9d64cc63335affd6219736",
+  "packageSha256": "43e7cda05e7f502265e0fc1c18057b85ce79a1ea4827d0e6af47d9e27d67693b",
+  "lockSha256": "70b796dc9cb453639cf5b61d1274ee065ae0dceba3ec7f3dfb3e65c0b2852860",
+  "workflowSha256": "aa530f82d0a7ed8bfed8b35f12755d2b79a2197569076c30964919da01c163cc",
   "installArgs": [
     "install",
     "--no-audit",
@@ -18,7 +18,7 @@
     {
       "path": ".",
       "name": "nirium",
-      "version": "0.15.0"
+      "version": "0.16.0"
     },
     {
       "path": "node_modules/@stellar/mpp",
@@ -28,27 +28,22 @@
     {
       "path": "node_modules/@stellar/stellar-sdk",
       "name": "@stellar/stellar-sdk",
-      "version": "14.6.1"
+      "version": "16.3.0"
     },
     {
       "path": "node_modules/@x402/core",
       "name": "@x402/core",
-      "version": "2.23.0"
+      "version": "2.28.0"
     },
     {
       "path": "node_modules/@x402/fetch",
       "name": "@x402/fetch",
-      "version": "2.23.0"
+      "version": "2.28.0"
     },
     {
       "path": "node_modules/@x402/stellar",
       "name": "@x402/stellar",
-      "version": "2.23.0"
-    },
-    {
-      "path": "node_modules/@x402/stellar/node_modules/@stellar/stellar-sdk",
-      "name": "@stellar/stellar-sdk",
-      "version": "16.2.0"
+      "version": "2.28.0"
     },
     {
       "path": "node_modules/typescript",
@@ -59,5 +54,7 @@
   "platforms": [
     "win32",
     "linux"
-  ]
+  ],
+  "tree": "c5552a44c8d386f689eb764617cf89081fbb7b21",
+  "allowedLockChanges": []
 }

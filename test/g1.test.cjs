@@ -13,16 +13,11 @@ async function until(predicate){const deadline=Date.now()+2000;while(!predicate(
 function check(id,expected,fn,scope='real Agent/x402 signing path'){
  test(id,{timeout:5000},async()=>{
   const store=makeStore(id);
-  const row={id,expected,scope,actual:'RUNNING',realModules:['Nirium Agent','@x402/fetch','@x402/core','@x402/stellar ExactStellarScheme','Stellar SDK 16.2.0 AssembledTransaction/XDR/Ed25519','public-R1 candidate with freshness + G1 composition'],simulatedModules:['merchant fetch challenge and paid response','RPC getLatestLedger and simulateTransaction','Horizon ledger times','policy and confirmed state'],signedAuthorizationEscapedHarness:false,transactionsBroadcast:0,keysUsed:'ephemeral unfunded in-memory test key only',productionSourceMutation:false,limitations:['No remote node verification/settlement','L01 reads do not reserve','L02 direct signer bypass','legacy preimage lacks separate credential-address field']};
-  if(id==='G1-SELF-ESCALATION'){
-   row.realModules=['Nirium Agent.initX402/client construction only','Stellar SDK 16.2.0 XDR HashIdPreimage','public-R1 candidate with freshness + G1 composition'];
-   row.simulatedModules=['administrative invocation injected at adapter boundary','spending-credential policy fixture'];
-   row.limitations.push('No Agent.x402Fetch, AssembledTransaction or actual administrator/governance execution in this case');
-  }
+  const row={id,expected,scope,actual:'RUNNING',realModules:['Nirium Agent','@x402/fetch','@x402/core','@x402/stellar ExactStellarScheme','Stellar SDK resolved from pinned graph AssembledTransaction/XDR/Ed25519','official Nirium x402-policy hook only'],simulatedModules:['merchant fetch challenge and paid response','RPC getLatestLedger and simulateTransaction','Horizon ledger times','policy and confirmed state'],signedAuthorizationEscapedHarness:false,transactionsBroadcast:0,keysUsed:'ephemeral unfunded in-memory test key only',productionSourceMutation:false,limitations:['No remote node verification/settlement','L01 reads do not reserve','L02 direct signer bypass','legacy preimage lacks separate credential-address field']};
   if(id==='G1-FRACTIONATION')row.policyState={source:'simulated confirmed state',limit:'2000',deniedSpent:'1996',allowedControlSpent:'1000',requested:'499',reservation:false};
   ledger.push(row);
   try{await ctx.run(store,()=>fn(store));assert.equal(store.fallback,0);row.actual='PASS';}catch(e){row.actual='FAIL';row.error=String(e.message);throw e;}finally{
-   row.signerCallCount=store.calls;row.authorizationCount=store.authorizations;row.policyDecision=store.decisions;row.networkRequestsAttempted=store.network;row.externalNetworkAttempts=store.network.filter(e=>e.layer.startsWith('BLOCKED')).length;
+   row.signerReturnedShapes=store.returnedShapes;row.errorDetails=store.errorDetails;row.signatureReturnedCount=store.returned;row.signatureVerifiedCount=store.verified;row.observerRecords=store.observer;row.boundaryObservation=store.boundaryObservation??null;row.signerCallCount=store.calls;row.authorizationCount=store.authorizations;row.policyDecision=store.decisions;row.networkRequestsAttempted=store.network;row.externalNetworkAttempts=store.network.filter(e=>e.layer.startsWith('BLOCKED')).length;
    row.decisionNote=id==='G1-POLICY-ERROR'?'provider threw; no decision':id==='G1-TIMEOUT'?'provider unresolved; deadline expired':id==='G1-LATE-ALLOW'?'ALLOW recorded after deadline and ignored':'see ordered policyDecision and expected outcome';
    row.acceptedPayloads=store.payloads;row.contexts=store.contexts.map(c=>({requestId:c.requestId,contextHash:c.contextHash,semantic:c.semantic}));
    row.freshnessChecks=store.freshness;row.freshnessScenario=store.freshnessScenario??null;row.observedErrors=store.observedErrors??[];
@@ -33,17 +28,17 @@ check('G1-ALLOW','one signer call; cryptographically valid result incorporated i
  const {agent}=setup(s,c=>decision(c));assert.equal((await fetchPayment(agent)).status,200);assert.equal(s.calls,1);assert.equal(s.authorizations,1);assert.equal(s.payloads.length,1);
  const c=s.contexts[0].semantic;assert.equal(c.asset,asset);assert.equal(c.to,payTo);assert.equal(c.from,s.key.publicKey());assert.equal(c.amount,'499');assert.equal(c.expirationLedger,112);assert.ok(BigInt(c.nonce)>1000n);assert.equal(c.subInvocations,0);
 });
-for(const [id,kind,code] of [['G1-DENY','DENY','POLICY_DENIED'],['G1-WAIT','WAIT','POLICY_WAIT']])check(id,'zero signer calls and no paid retry',async s=>{
+for(const [id,kind,code] of [['G1-DENY','DENY','x402 policy DENY'],['G1-WAIT','WAIT','x402 policy WAIT']])check(id,'zero signer calls and no paid retry',async s=>{
  const {agent}=setup(s,c=>decision(c,kind));await assert.rejects(fetchPayment(agent),new RegExp(code));assert.equal(s.calls,0);assert.equal(s.payloads.length,0);
 });
-check('G1-POLICY-ERROR','provider error fails closed',async s=>{const {agent}=setup(s,()=>{throw Error('fixture unavailable')});await assert.rejects(fetchPayment(agent),/POLICY_UNAVAILABLE/);assert.equal(s.calls,0)});
-check('G1-TIMEOUT','provider never resolves; zero signer calls',async s=>{const {agent}=setup(s,()=>new Promise(()=>{}),{timeoutMs:20});await assert.rejects(fetchPayment(agent),/POLICY_TIMEOUT/);assert.equal(s.calls,0)});
-check('G1-LATE-ALLOW','late ALLOW remains unable to sign after timeout',async s=>{const {agent}=setup(s,async c=>{await delay(80);return decision(c)},{timeoutMs:20});await assert.rejects(fetchPayment(agent),/POLICY_TIMEOUT/);await delay(100);assert.deepEqual(s.decisions,['ALLOW']);assert.equal(s.calls,0)});
-check('G1-DECISION-BINDING','decision A rejected for B; only A signs',async s=>{let first;const {agent}=setup(s,c=>first??(first=decision(c)));await fetchPayment(agent,'100','A');await assert.rejects(fetchPayment(agent,'101','B'),/DECISION_BINDING_MISMATCH/);assert.equal(s.calls,1);assert.equal(s.payloads.length,1);assert.notEqual(s.contexts[0].contextHash,s.contexts[1].contextHash)});
+check('G1-POLICY-ERROR','provider error fails closed',async s=>{const {agent}=setup(s,()=>{throw Error('fixture unavailable')});await assert.rejects(fetchPayment(agent),/x402 policy ENGINE_ERROR/);assert.equal(s.calls,0)});
+check('G1-TIMEOUT','provider never resolves; zero signer calls',async s=>{const {agent}=setup(s,()=>new Promise(()=>{}),{timeoutMs:20});await assert.rejects(fetchPayment(agent),/x402 policy TIMEOUT/);assert.equal(s.calls,0)});
+check('G1-LATE-ALLOW','late ALLOW remains unable to sign after timeout',async s=>{const {agent}=setup(s,async c=>{await delay(80);return decision(c)},{timeoutMs:20});await assert.rejects(fetchPayment(agent),/x402 policy TIMEOUT/);await delay(100);assert.deepEqual(s.decisions,['ALLOW']);assert.equal(s.calls,0)});
+check('G1-DECISION-BINDING','decision A rejected for B; only A signs',async s=>{let first;const {agent}=setup(s,c=>first??(first=decision(c)));await fetchPayment(agent,'100','A');await assert.rejects(fetchPayment(agent,'101','B'),/x402 policy UNBOUND/);assert.equal(s.calls,1);assert.equal(s.payloads.length,1);assert.notEqual(s.contexts[0].contextHash,s.contexts[1].contextHash)});
 check('G1-CONCURRENT-ISOLATION','B resolves DENY before A ALLOW; A only signs its exact input',async s=>{
  let resolveA,resolveB;const seen=[];
  const {agent}=setup(s,c=>new Promise(resolve=>{seen.push(c.semantic.amount);if(c.semantic.amount==='101')resolveA=()=>resolve(decision(c));else resolveB=()=>resolve(decision(c,'DENY'))}));
- const a=fetchPayment(agent,'101','A');const b=fetchPayment(agent,'202','B');const bRejected=assert.rejects(b,/POLICY_DENIED/);
+ const a=fetchPayment(agent,'101','A');const b=fetchPayment(agent,'202','B');const bRejected=assert.rejects(b,/x402 policy DENY/);
  await until(()=>resolveA&&resolveB);resolveB();await bRejected;assert.equal(s.calls,0);resolveA();await a;
  assert.equal(s.calls,1);assert.equal(s.payloads[0].semantic.amount,'101');assert.deepEqual(s.decisions,['DENY','ALLOW']);
 });
@@ -56,20 +51,18 @@ check('G1-CONCURRENT-ALLOW-PAIR','two reverse-order ALLOW results stay bound to 
 check('G1-FRACTIONATION','confirmed-state fixture 1996/2000 rejects 499; sufficient-capacity control signs',async s=>{
  let confirmedSpent=1996n;
  const {agent}=setup(s,c=>decision(c,confirmedSpent+BigInt(c.semantic.amount)<=2000n?'ALLOW':'DENY'));
- await assert.rejects(fetchPayment(agent,'499'),/POLICY_DENIED/);assert.equal(s.calls,0);
+ await assert.rejects(fetchPayment(agent,'499'),/x402 policy DENY/);assert.equal(s.calls,0);
  confirmedSpent=1000n;await fetchPayment(agent,'499');assert.equal(s.calls,1);assert.equal(s.payloads.length,1);
 });
-check('G1-SELF-ESCALATION','administrative boundary injection DENY, zero signer calls',async s=>{
- const {signer}=setup(s,c=>decision(c,c.semantic.method==='transfer'?'ALLOW':'DENY'));
- const call=new S.xdr.InvokeContractArgs({contractAddress:new S.Address(asset).toScAddress(),functionName:'expand_policy',args:[S.nativeToScVal(999999n,{type:'i128'})]});
- const invocation=new S.xdr.SorobanAuthorizedInvocation({function:S.xdr.SorobanAuthorizedFunction.sorobanAuthorizedFunctionTypeContractFn(call),subInvocations:[]});
- const pre=S.xdr.HashIdPreimage.envelopeTypeSorobanAuthorization(new S.xdr.HashIdPreimageSorobanAuthorization({networkId:S.hash(Buffer.from(networkPassphrase)),nonce:S.xdr.Int64.fromString('9001'),signatureExpirationLedger:112,invocation}));
- await assert.rejects(signer.signAuthEntry(pre.toXDR('base64'),{address:s.key.publicKey()}),/POLICY_DENIED/);assert.equal(s.calls,0);assert.equal(s.contexts[0].semantic.method,'expand_policy');
-},'boundary injection of real XDR; exact scheme only expresses transfer; no claim x402Fetch executed admin action');
-check('G1-SIGNER-ERROR-NO-RETRY','one possibly-issued signature; zero retries and no payment payload',async s=>{const {agent}=setup(s,c=>decision(c),{throwAfter:true});await assert.rejects(fetchPayment(agent),/SIGNER_OUTCOME_UNKNOWN/);assert.equal(s.calls,1);assert.equal(s.authorizations,1);assert.equal(s.payloads.length,0)});
+check('G1-SELF-ESCALATION','official context rejects administrative invocation before policy; strict R2 semantic correspondence remains unequal',async s=>{
+ const {agent}=setup(s,c=>decision(c,c.semantic.method==='transfer'?'ALLOW':'DENY'),{mutateAuth(entry){entry.rootInvocation().function().contractFn().functionName('expand_policy')}});
+ await assert.rejects(fetchPayment(agent),e=>{s.errorDetails.push({name:e.name,outcome:e.outcome,message:e.message});assert.equal(e.name,'X402PolicyError');return e.outcome==='CONTEXT_MISMATCH'});
+ assert.equal(s.calls,0);assert.equal(s.contexts.length,0);s.boundaryObservation={outcome:'CONTEXT_MISMATCH',policyConsultations:0,strictR2Equivalent:false};
+},'real x402Fetch with simulated RPC administrative auth; no administrative execution');
+check('G1-SIGNER-ERROR-NO-RETRY','one possibly-issued signature; zero retries and no payment payload',async s=>{const {agent}=setup(s,c=>decision(c),{throwAfter:true});await assert.rejects(fetchPayment(agent),e=>{s.errorDetails.push({name:e.name,outcome:e.outcome??null,message:e.message});return e.name==='Error'&&e.message.includes('simulated signer failure after signature')});assert.equal(s.calls,1);assert.equal(s.authorizations,1);assert.equal(s.payloads.length,0)});
 check('G1-SIGNATURE-RESULT-INTEGRITY','signature over mutated amount rejected; no payment payload',async s=>{
  const {agent}=setup(s,c=>decision(c),{mutate(input){const p=S.xdr.HashIdPreimage.fromXDR(input,'base64');p.sorobanAuthorization().invocation().function().contractFn().args()[2]=S.nativeToScVal(999n,{type:'i128'});return p.toXDR('base64')}});
- await assert.rejects(fetchPayment(agent),/SIGNER_OUTCOME_UNKNOWN/);assert.equal(s.calls,1);assert.equal(s.payloads.length,0);
+ await assert.rejects(fetchPayment(agent),e=>{s.errorDetails.push({name:e.name,outcome:e.outcome??null,message:e.message});return e.name==='Error'&&e.message.includes("signature doesn't match payload")});assert.equal(s.calls,1);assert.equal(s.payloads.length,0);
 });
 const mutations={
  NETWORK:a=>a.networkId(Buffer.alloc(32,7)),
@@ -81,31 +74,30 @@ const mutations={
 };
 for(const [field,mutate] of Object.entries(mutations))check('G1-SIGNED-'+field+'-TAMPER','signature for changed '+field+' cannot enter x402 payload',async s=>{
  const {agent}=setup(s,c=>decision(c),{mutate(input){const p=S.xdr.HashIdPreimage.fromXDR(input,'base64');mutate(p.sorobanAuthorization());return p.toXDR('base64')}});
- await assert.rejects(fetchPayment(agent),/SIGNER_OUTCOME_UNKNOWN/);assert.equal(s.calls,1);assert.equal(s.authorizations,1);assert.equal(s.payloads.length,0);
+ await assert.rejects(fetchPayment(agent),e=>{s.errorDetails.push({name:e.name,outcome:e.outcome??null,message:e.message});return e.name==='Error'&&e.message.includes("signature doesn't match payload")});assert.equal(s.calls,1);assert.equal(s.authorizations,1);assert.equal(s.payloads.length,0);
 });
 check('G1-PREIMAGE-NETWORK-REJECTION','preimage from different network fails before signer',async s=>{
- const {agent,signer}=setup(s,c=>decision(c,'DENY'));await assert.rejects(fetchPayment(agent),/POLICY_DENIED/);
+ const {agent,networkBoundarySigner}=setup(s,c=>decision(c,'DENY'));await assert.rejects(fetchPayment(agent),/x402 policy DENY/);
  const p=S.xdr.HashIdPreimage.fromXDR(s.contexts[0].authEntry,'base64');mutations.NETWORK(p.sorobanAuthorization());
- await assert.rejects(signer.signAuthEntry(p.toXDR('base64'),{address:s.key.publicKey()}),/POLICY_UNAVAILABLE/);assert.equal(s.calls,0);
-},'real x402 captures original XDR; altered preimage injected at adapter boundary');
-check('G1-PREIMAGE-ACCOUNT-REJECTION','transfer.from different from configured signer fails before signer',async s=>{
- const {agent,signer}=setup(s,c=>decision(c,'DENY'));await assert.rejects(fetchPayment(agent),/POLICY_DENIED/);
- const p=S.xdr.HashIdPreimage.fromXDR(s.contexts[0].authEntry,'base64');p.sorobanAuthorization().invocation().function().contractFn().args()[0]=S.nativeToScVal(S.Keypair.random().publicKey(),{type:'address'});
- await assert.rejects(signer.signAuthEntry(p.toXDR('base64'),{address:s.key.publicKey()}),/POLICY_UNAVAILABLE/);assert.equal(s.calls,0);
-},'real x402 captures original XDR; altered preimage injected at adapter boundary');
+ const consultations=s.contexts.length;await assert.rejects(networkBoundarySigner().signAuthEntry(p.toXDR('base64'),{address:s.key.publicKey()}),/x402 policy CONTEXT_MISMATCH/);assert.equal(s.calls,0);assert.equal(s.contexts.length,consultations);s.boundaryObservation={outcome:'CONTEXT_MISMATCH',policyConsultationsForMutatedPreimage:0,privateHelperNecessary:true};
+},'real x402 captures original XDR; altered preimage injected at official gate artificial boundary');
+check('G1-PREIMAGE-ACCOUNT-REJECTION','transfer.from different from configured signer fails before policy and signer',async s=>{
+ const {agent}=setup(s,c=>decision(c),{mutateAuth(entry){entry.rootInvocation().function().contractFn().args()[0]=S.nativeToScVal(S.Keypair.random().publicKey(),{type:'address'})}});
+ await assert.rejects(fetchPayment(agent),e=>{s.errorDetails.push({name:e.name,outcome:e.outcome,message:e.message});return e.name==='X402PolicyError'&&e.outcome==='CONTEXT_MISMATCH'});assert.equal(s.calls,0);assert.equal(s.contexts.length,0);
+},'real x402Fetch with simulated RPC auth from mismatch');
 check('G1-SIGNER-IDENTITY-CHANGE','underlying signer identity change cannot issue authorization',async s=>{
  let raw;const setupResult=setup(s,c=>{raw.address=S.Keypair.random().publicKey();return decision(c)});raw=setupResult.raw;
- await assert.rejects(fetchPayment(setupResult.agent),/SIGNER_OUTCOME_UNKNOWN/);assert.equal(s.calls,0);
+ await assert.rejects(fetchPayment(setupResult.agent),/x402 policy SIGNER_CHANGED/);assert.equal(s.calls,0);
 });
 check('G1-NO-SECRET-FALLBACK','DENY has no fallback and mixed signer/secret config rejected',async s=>{
- const {agent,signer}=setup(s,c=>decision(c,'DENY'));assert.throws(()=>agent.initX402({signer,secretKey:'not-a-real-key',network:'stellar:testnet'}),/both/);await assert.rejects(fetchPayment(agent),/POLICY_DENIED/);assert.equal(s.calls,0);
+ const {agent,raw}=setup(s,c=>decision(c,'DENY'));assert.throws(()=>agent.initX402({signer:raw,secretKey:'not-a-real-key',network:'stellar:testnet'}),/both/);await assert.rejects(fetchPayment(agent),/x402 policy DENY/);assert.equal(s.calls,0);
 });
 check('L01','two independent preflights see 400 and each sign 300; reservation NOT_SOLVED',async s=>{
  const {agent}=setup(s,c=>decision(c,BigInt(c.semantic.amount)<=400n?'ALLOW':'DENY'));
  await Promise.all([fetchPayment(agent,'300','A'),fetchPayment(agent,'300','B')]);assert.equal(s.calls,2);assert.equal(s.payloads.length,2);assert.equal(s.payloads.reduce((n,p)=>n+BigInt(p.semantic.amount),0n),600n);
 });
-check('L02','direct raw signer bypasses DENY wrapper; bypass NOT_SOLVED',async s=>{
- const {agent,raw}=setup(s,c=>decision(c,'DENY'));await assert.rejects(fetchPayment(agent),/POLICY_DENIED/);assert.equal(s.calls,0);
+check('L02','same-process direct raw signer bypasses DENY hook; bypass NOT_SOLVED',async s=>{
+ const {agent,raw}=setup(s,c=>decision(c,'DENY'));await assert.rejects(fetchPayment(agent),/x402 policy DENY/);assert.equal(s.calls,0);
  const input=s.contexts[0].authEntry;await raw.signAuthEntry(input,{address:s.key.publicKey(),networkPassphrase});assert.equal(s.calls,1);assert.equal(s.payloads.length,0);
 });
 
@@ -117,31 +109,31 @@ check('G1-ALLOW-CURRENT-VERSION','v7 ALLOW, v7 current, unexpired: exactly one s
 check('G1-STALE-ALLOW-POLICY-VERSION','v7 ALLOW becomes stale at v8 final check; zero signer calls',async s=>{
  const entered=barrier(),release=barrier();let current='v7';
  const {agent}=setup(s,c=>decision(c),{currentPolicyVersion:async()=>{entered.resolve();await release.promise;return current}});
- const request=fetchPayment(agent);const rejected=rejectsExpected(s,request,'POLICY_VERSION_STALE');
+ const request=fetchPayment(agent);const rejected=rejectsExpected(s,request,'x402 policy STALE');
  await entered.promise;current='v8';release.resolve();await rejected;assert.equal(s.calls,0);
  s.freshnessScenario={decisionVersion:'v7',versionAtCheck:current,barrier:'version changed before freshness source returned',clock:1000,expiresAt:2000};
 });
 check('G1-ALLOW-EXPIRED','expiry boundary reached before signing; zero signer calls',async s=>{
  let now=1000;const {agent}=setup(s,c=>{const d=decision(c);now=2000;return d},{now:()=>now});
- await rejectsExpected(s,fetchPayment(agent),'POLICY_DECISION_EXPIRED');assert.equal(s.calls,0);
+ await rejectsExpected(s,fetchPayment(agent),'x402 policy EXPIRED');assert.equal(s.calls,0);
  s.freshnessScenario={decisionVersion:'v7',currentVersion:'v7',nowAtDecision:1000,nowAtCheck:now,expiresAt:2000};
 });
 check('G1-FRESHNESS-SOURCE-ERROR','freshness unavailable fails closed; zero signer calls',async s=>{
  const {agent}=setup(s,c=>decision(c),{currentPolicyVersion:async()=>{throw Error('fixture offline')}});
- await rejectsExpected(s,fetchPayment(agent),'POLICY_FRESHNESS_UNAVAILABLE');assert.equal(s.calls,0);
+ await rejectsExpected(s,fetchPayment(agent),'x402 policy VERSION_UNAVAILABLE');assert.equal(s.calls,0);
 });
 check('G1-STALE-ALLOW-CONCURRENT-REVISION','A and B obtain v7 ALLOW; A signs at v7 and B is stale at v8',async s=>{
  const both=barrier(),letA=barrier(),letB=barrier();let arrivals=0,current='v7';
  // The freshness API receives the bound base context. Decode the actual XDR
  // to route barriers; economic identity never comes from a URL or label.
- const byAmount=require('../src/stellar-policy-signer.cjs').decode;
- // Both requests share one adapter and one explicit freshness source.
+ const byAmount=require('../src/observe.cjs').decode;
+ // Both requests share one official hook and one explicit freshness source.
  const shared=setup(s,c=>decision(c),{currentPolicyVersion:async c=>{
   if(++arrivals===2)both.resolve();const amount=byAmount(c.authEntry,c.account,c.networkPassphrase).amount;
   await (amount==='101'?letA:letB).promise;return current;
  }});
  const a=fetchPayment(shared.agent,'101','A');const b=fetchPayment(shared.agent,'202','B');
- const bRejected=rejectsExpected(s,b,'POLICY_VERSION_STALE');
+ const bRejected=rejectsExpected(s,b,'x402 policy STALE');
  await both.promise;assert.deepEqual(s.decisions,['ALLOW','ALLOW']);letA.resolve();await a;
  current='v8';letB.resolve();await bRejected;
  assert.equal(s.calls,1);assert.equal(s.payloads[0].semantic.amount,'101');
@@ -150,20 +142,20 @@ check('G1-STALE-ALLOW-CONCURRENT-REVISION','A and B obtain v7 ALLOW; A signs at 
 });
 for(const field of ['policyVersion','expiresAt'])check('G1-ALLOW-MISSING-'+field.toUpperCase(),'missing mandatory ALLOW metadata fails closed',async s=>{
  const {agent}=setup(s,c=>{const d=decision(c);delete d[field];return d});
- await rejectsExpected(s,fetchPayment(agent),'INVALID_POLICY_DECISION');assert.equal(s.calls,0);
+ await rejectsExpected(s,fetchPayment(agent),field==='expiresAt'?'x402 policy EXPIRED':'x402 policy MALFORMED');assert.equal(s.calls,0);
 });
 check('G1-EXPIRY-DURING-FRESHNESS','expiry is rechecked after awaited version source',async s=>{
  let now=1000;const {agent}=setup(s,c=>decision(c),{now:()=>now,currentPolicyVersion:async()=>{now=2000;return 'v7'}});
- await rejectsExpected(s,fetchPayment(agent),'POLICY_DECISION_EXPIRED');assert.equal(s.calls,0);
+ await rejectsExpected(s,fetchPayment(agent),'x402 policy EXPIRED');assert.equal(s.calls,0);
  s.freshnessScenario={beforeVersionRead:1000,afterVersionRead:2000,expiresAt:2000};
 });
 check('G1-FRESHNESS-SOURCE-TIMEOUT','unresolved freshness source times out closed',async s=>{
  const {agent}=setup(s,c=>decision(c),{freshnessTimeoutMs:20,currentPolicyVersion:()=>new Promise(()=>{})});
- await rejectsExpected(s,fetchPayment(agent),'POLICY_FRESHNESS_UNAVAILABLE');assert.equal(s.calls,0);
+ await rejectsExpected(s,fetchPayment(agent),'x402 policy TIMEOUT');assert.equal(s.calls,0);
 });
 check('G1-FRESHNESS-SOURCE-INVALID','empty current version is unavailable, not a matching decision',async s=>{
  const {agent}=setup(s,c=>decision(c),{currentPolicyVersion:async()=> ''});
- await rejectsExpected(s,fetchPayment(agent),'POLICY_FRESHNESS_UNAVAILABLE');assert.equal(s.calls,0);
+ await rejectsExpected(s,fetchPayment(agent),'x402 policy VERSION_UNAVAILABLE');assert.equal(s.calls,0);
 });
 after(()=>{
  const out=process.env.G1_EVIDENCE;if(!out)throw Error('Use RUN.ps1: missing result directory');fs.mkdirSync(out,{recursive:true});

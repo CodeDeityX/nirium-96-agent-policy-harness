@@ -1,40 +1,29 @@
-# Real, simulated and unproven
+# Real execution, simulation and limits
 
-Real execution: Nirium Agent, x402 fetch/client/exact scheme, Stellar
-AssembledTransaction construction and signAuthEntries, XDR and Ed25519. V8
-coverage and per-case assertions record the path. No whole-path mocks replace
-these implementations.
+Real: Nirium Agent/official policy hook, x402 fetch/core/exact Stellar scheme,
+Stellar assembly, XDR, signAuthEntries/authorizeEntry and Ed25519. Simulated:
+merchant challenge/paid response, RPC latest ledger/simulateTransaction, Horizon
+ledger times, policy/version/confirmed capacity and clock. No Soroban execution.
+Only ephemeral unfunded in-memory test keys; no signed payload export or broadcast.
 
-Simulated APIs: `globalThis.fetch` for merchant 402/paid responses;
-`rpc.Server.getLatestLedger`, `rpc.Server.simulateTransaction` and
-`Horizon.Server.ledgers`. RPC simulation returns fixture authorization entries
-built with real XDR from the real transaction invocation; it does not execute
-Soroban. Policy, version state, time and exposure are controlled test fixtures.
-The administrative test injects XDR at the boundary because exact only expresses
-transfer. It does not execute an admin operation via x402Fetch.
+SELF-ESCALATION uses real x402Fetch with simulated RPC administrative auth.
+PREIMAGE-ACCOUNT also uses real x402Fetch plus simulated RPC. PREIMAGE-NETWORK
+alone retains the private createPolicyGatedSigner boundary on captured XDR:
+auth XDR does not carry a separable networkId that ordinary RPC mutation could
+change; the installed SDK derives it locally. That subcase is not public-path
+integration. No administrative or governance action executes on-chain.
 
-There is no merchant, remote RPC, Horizon service, facilitator or network account
-in G1. Signatures and signed payloads stay in test memory; exported ledgers contain
-only unsigned context, hashes, counts and outcomes. The harness blocks socket,
-HTTP/S, TLS, DNS, datagram and unknown fetch entrypoints and blocks sendTransaction.
-Its separate self-check intentionally invokes these blocked entrypoints without
-physical I/O. This is not an OS sandbox; it is not proof against malicious native
-extensions or code deliberately avoiding the interceptors.
+L01 limitation: independent confirmed-capacity snapshots do not reserve capacity.
+L02 limitation: same-process raw signer access/direct calls or replacing
+signAuthEntry after gate creation remain possible. There is no account-level or
+on-chain enforcement. Final freshness checks are not atomic with signing or
+external revision. Legacy preimages lack a separate credential-address binding.
+No universal security guarantee or current KINE/Velocity claim is made.
 
-The original upstream regression includes its existing x402Serve/guard mocks
-and local WebSocket tests. These are baseline regression, not added MPP or
-x402Serve qualification. Only localhost WebSocket I/O is used by that baseline.
-Preparation needs public GitHub/npm; blockchain RPC/broadcast remains prohibited.
-
-L01: two reads can each see 400 and authorize 300. Reads do not reserve capacity.
-L02: holding the raw signer permits bypassing the in-process adapter. The test
-uses a direct reference; it does not exercise an independent process or G2.
-G2 NOT_RUN; G3 NOT_SOLVED; G4 NOT_RUN. No claim uses KINE/ANANKE evidence.
-
-Legacy authorization preimages lack a separate credential-address field. The
-composition checks transfer.from, configured/options address and public-key
-verification. Other preimage formats, delegated accounts, contract signatures,
-arbitrary subtree economic semantics and owner authentication are not qualified.
-The version observation can become stale after it is read, and a signer can be
-asynchronous. This package does not eliminate every TOCTOU window. Policy
-revocation after the final check and execution-time enforcement remain unproven.
+The in-process transport guard is not OS isolation. Upstream regression permits
+real localhost WebSockets and blocks remote requests; three attempted fetches to
+channels.openzeppelin.com were blocked per qualification run. G1/supplementary
+had zero external attempts. Git/npm acquisition uses network separately.
+No MPP certification, external policy attestation, settlement or physical tests.
+Historical U0 counts are not integration evidence. Generated logs can contain
+local paths and must remain private. Private review artifacts are not runtime inputs.

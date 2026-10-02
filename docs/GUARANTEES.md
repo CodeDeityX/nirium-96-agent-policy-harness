@@ -1,39 +1,31 @@
-# Tested G1 boundary
+# Current tested R3 boundary
 
-The generic adapter hashes the exact encoded preimage, unique request identity,
-policy reference, signer account and expected network. Only a decision matching
-all request-binding fields can progress. DENY, WAIT, provider error or timeout
-cannot invoke the underlying signer. Late ALLOW is ignored.
+The acceptance authority is the official `initX402({ signer: raw, policy })`
+hook on the real `x402Fetch` path, not the former generic adapter. The passive
+compatibility view renames context data without deciding policy. contextHash
+binds URL, method and authorization preimage hash; the decision must echo it.
+There is no official requestId or policyRef. `policy.evaluate(ctx,{signal})`
+returns decision/contextHash/policyVersion/expiresAt. `currentVersion(ctx,{signal})`
+receives no decision. `requireExpiry = true`; one timeoutMs covers evaluation and
+version lookup, capped at half maxTimeoutSeconds. Expiry is distinct from ledger
+expiration and cannot revoke a signature already issued.
 
-ALLOW additionally requires a nonempty `policyVersion` and finite safe-integer
-`expiresAt` (Unix milliseconds). Decision fields are copied before awaiting
-freshness. Expiry is tested both before and after the awaited version observation;
-`now >= expiresAt` fails with `POLICY_DECISION_EXPIRED`. A different current
-version fails with `POLICY_VERSION_STALE`. An error, timeout or invalid version
-fails with `POLICY_FRESHNESS_UNAVAILABLE`. An invalid clock also fails closed.
-Missing decision metadata is `INVALID_POLICY_DECISION`.
+Observed refusal outcomes: DENY, WAIT, ENGINE_ERROR, TIMEOUT, UNBOUND, MALFORMED,
+EXPIRED (including missing expiry), STALE, VERSION_UNAVAILABLE, SIGNER_CHANGED,
+CLOCK_INVALID, CONTEXT_MISMATCH and SIGNER_ERROR for unusable signer results.
+Finite clock validation applies to each read. Final version lookup, clock and
+address checks follow the ALLOWED observer. No await occurs between the final
+checks and invoking the signer; signing and policy changes are still not atomic.
 
-The caller supplies `now()` and `currentPolicyVersion(context, decision)`.
-There is no default remote backend and no invented Nirium hook. The source is
-expected to resolve the policy identified by context.policyRef. Its truth and
-authority are not independently proven by these tests. The final check invokes
-no further asynchronous operation before calling the signer, but it is not
-atomic with that signer, external policy updates, or account execution.
+`onDecision` receipts: ALLOWED is a notice before final checks, not completed
+authorization; SIGNED means a nonempty returned signedAuthEntry string, NOT
+cryptographic validity; SIGNER_ERROR records rejection/throw/unusable result.
+Signer errors can follow local generation before a throw. Rejected/pending
+observer promises are not awaited and their rejections are consumed. This does
+not isolate hostile same-process code or bound synchronous CPU work.
 
-The Stellar composition decodes a legacy authorization `HashIdPreimage` using
-the **16.2.0 SDK actually resolved by installed @x402/stellar**. It extracts the
-network hash, from/to, asset, exact i128 amount, nonce, expiration ledger and
-invocation XDR. The final returned SEP-43 value is a 64-byte Ed25519 signature,
-not signed-entry XDR. It is verified over the exact approved preimage. The
-in-memory merchant checks the resulting actual x402 transaction payload again.
-
-Policy `expiresAt` is distinct from the Stellar authorization's expiration
-ledger: it gates issuance locally and does not shorten or revoke an authorization
-after signing. Current policy-version comparison provides no pending-capacity
-reservation and no receipt/signature attestation by a policy authority.
-
-New required cases A–E use injected clocks and deterministic promise barriers.
-Additional cases check missing metadata, expiry during the version observation,
-an unresolved source and an invalid source value. The original timeout cases
-exercise actual timer deadlines; the new version/expiry cases do not depend on
-wall-clock sleeps. L01 and L02 remain expected counterexamples.
+Installed Stellar SDK 16.3.0 verifies returned signature bytes against the
+preimage; tamper cases produce plain Error downstream. The gate does not perform
+that cryptographic verification. Signer-thrown errors remain plain Error through
+x402; missing/invalid returned signature gives X402PolicyError/SIGNER_ERROR.
+L01 and L02 are intentional limitations, not solved guarantees. See LIMITS.

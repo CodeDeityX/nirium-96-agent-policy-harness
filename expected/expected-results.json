@@ -1,7 +1,7 @@
 {
   "upstream": {
     "jest": 56,
-    "node": 2
+    "node": 114
   },
   "existingCount": 25,
   "freshnessCount": 10,
@@ -69,8 +69,8 @@
     },
     {
       "id": "G1-SELF-ESCALATION",
-      "expected": "administrative boundary injection DENY, zero signer calls",
-      "scope": "boundary injection of real XDR; exact scheme only expresses transfer; no claim x402Fetch executed admin action",
+      "expected": "CONTEXT_MISMATCH; zero policy consultation; zero signer; strict R2 non-equivalence",
+      "scope": "real x402Fetch with simulated RPC administrative auth; no administrative execution",
       "signerCalls": 0
     },
     {
@@ -124,13 +124,13 @@
     {
       "id": "G1-PREIMAGE-NETWORK-REJECTION",
       "expected": "preimage from different network fails before signer",
-      "scope": "real x402 captures original XDR; altered preimage injected at adapter boundary",
+      "scope": "private createPolicyGatedSigner boundary on real x402-captured preimage",
       "signerCalls": 0
     },
     {
       "id": "G1-PREIMAGE-ACCOUNT-REJECTION",
-      "expected": "transfer.from different from configured signer fails before signer",
-      "scope": "real x402 captures original XDR; altered preimage injected at adapter boundary",
+      "expected": "transfer.from different from configured signer fails before policy and signer",
+      "scope": "real x402Fetch with simulated RPC auth from mismatch",
       "signerCalls": 0
     },
     {
@@ -153,69 +153,69 @@
     },
     {
       "id": "L02",
-      "expected": "direct raw signer bypasses DENY wrapper; bypass NOT_SOLVED",
+      "expected": "same-process raw signer direct bypass; method replacement remains a separate supplementary limitation",
       "scope": "real Agent/x402 signing path",
       "signerCalls": 1
     },
     {
       "id": "G1-ALLOW-CURRENT-VERSION",
       "signerCalls": 1,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "v7 ALLOW, v7 current, unexpired: exactly one signature",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-STALE-ALLOW-POLICY-VERSION",
       "signerCalls": 0,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "v7 ALLOW becomes stale at v8 final check; zero signer calls",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-ALLOW-EXPIRED",
       "signerCalls": 0,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "expiry boundary reached before signing; zero signer calls",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-FRESHNESS-SOURCE-ERROR",
       "signerCalls": 0,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "freshness unavailable fails closed; zero signer calls",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-STALE-ALLOW-CONCURRENT-REVISION",
       "signerCalls": 1,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "A and B obtain v7 ALLOW; A signs at v7 and B is stale at v8",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-ALLOW-MISSING-POLICYVERSION",
       "signerCalls": 0,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "missing mandatory ALLOW metadata fails closed",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-ALLOW-MISSING-EXPIRESAT",
       "signerCalls": 0,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "missing mandatory ALLOW metadata fails closed",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-EXPIRY-DURING-FRESHNESS",
       "signerCalls": 0,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "expiry is rechecked after awaited version source",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-FRESHNESS-SOURCE-TIMEOUT",
       "signerCalls": 0,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "unresolved freshness source times out closed",
+      "scope": "real Agent/x402 signing path"
     },
     {
       "id": "G1-FRESHNESS-SOURCE-INVALID",
       "signerCalls": 0,
-      "expected": "PASS assertions for bounded pre-sign freshness; see test definition",
-      "scope": "real Agent/x402 path with injected freshness and clock"
+      "expected": "empty current version is unavailable, not a matching decision",
+      "scope": "real Agent/x402 signing path"
     }
   ],
   "historical": {
@@ -226,9 +226,10 @@
   },
   "limits": {
     "L01_PENDING_CAPACITY_RESERVATION": "NOT_SOLVED",
-    "L02_OUT_OF_PROCESS_SIGNER_BYPASS": "NOT_SOLVED",
     "G2_ONCHAIN_ENFORCEMENT": "NOT_RUN",
     "G3_PENDING_CAPACITY": "NOT_SOLVED",
-    "G4_GOVERNANCE": "NOT_RUN"
-  }
+    "G4_GOVERNANCE": "NOT_RUN",
+    "L02_SAME_PROCESS_SIGNER_BYPASS": "NOT_SOLVED"
+  },
+  "upstreamMeasuredFrom": "Independent pre-publication reverification on Windows and WSL at pinned target"
 }

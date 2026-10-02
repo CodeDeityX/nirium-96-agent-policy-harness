@@ -33,9 +33,10 @@ function execute(name,mutate,category,mode='block'){
  if(mode!=='late'){if(before)assert.deepEqual(fs.readFileSync(manifest),before);else assert.equal(fs.existsSync(manifest),false);}
  return {dir,summary,attempts,result};
 }
-test('A published test bytes with exactly the stale published hash',()=>execute('A',(dir,m)=>{
+test('A R3 test bytes rejected against stale historical published hash',()=>execute('A',(dir,m)=>{
  const actual=require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(dir,'test/g1.test.cjs'))).digest('hex');
- assert.equal(actual,'068edf698857099aa123ace5dff94e8ada445d7a197c8d20e4904de7a7489fd1');
+ // R3 adaptation: test file changed; stale published R1 hash is still intentionally wrong.
+ assert.notEqual(actual,'00761d669c882d67a5b1409edf24eaf4e0fbb50f3863d6d459eac27708e2e0be');
  fs.writeFileSync(m,fs.readFileSync(m,'utf8').replace(actual+'  test/g1.test.cjs','00761d669c882d67a5b1409edf24eaf4e0fbb50f3863d6d459eac27708e2e0be  test/g1.test.cjs'));
 },'HASH_MISMATCH'));
 test('B one byte source mutation',()=>execute('B',d=>fs.appendFileSync(path.join(d,'src/runtime.cjs'),' '),'HASH_MISMATCH'));

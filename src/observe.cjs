@@ -1,0 +1,4 @@
+'use strict';
+const {stellar:S}=require('./runtime.cjs');
+function decode(input,account,networkPassphrase){const pre=S.xdr.HashIdPreimage.fromXDR(input,'base64');const a=pre.switch().name==='envelopeTypeSorobanAuthorization'?pre.sorobanAuthorization():pre.sorobanAuthorizationWithAddress();const root=a.invocation(),call=root.function().contractFn(),args=call.args();return {networkId:Buffer.from(a.networkId()).toString('hex'),account,asset:S.Address.fromScAddress(call.contractAddress()).toString(),method:call.functionName().toString(),from:args[0]?.switch().name==='scvAddress'?S.Address.fromScAddress(args[0].address()).toString():null,to:args[1]?.switch().name==='scvAddress'?S.Address.fromScAddress(args[1].address()).toString():null,amount:args[2]?.switch().name==='scvI128'?S.scValToNative(args[2]).toString():null,nonce:a.nonce().toString(),expirationLedger:a.signatureExpirationLedger(),subInvocations:root.subInvocations().length};}
+module.exports={decode};

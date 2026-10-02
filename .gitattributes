@@ -1,4 +1,4 @@
-# R2 canonical publication bytes; binary data is not transformed.
+# Canonical publication bytes; binary data is not transformed.
 * -text
 *.cjs text eol=lf
 *.ts text eol=lf
