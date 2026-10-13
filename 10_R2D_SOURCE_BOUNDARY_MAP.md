@@ -1,0 +1,1 @@
+Each row maps case entry -> stimulus adapter -> real hook/policy/signer or engine operation -> raw emitter. C05 maps orchestrator -> worker1 engine/journal -> forced exit -> worker2 journal reconstruction. C03-X is explicitly unreachable.

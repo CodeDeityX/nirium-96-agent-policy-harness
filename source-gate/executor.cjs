@@ -1,0 +1,1 @@
+const fs=require('fs');if(!process.env.R2D_EXECUTION_AUTH_TOKEN)throw new Error('SOURCE_GATE_TRIPWIRE: registered R2D execution is disabled');if(process.env.R2D_EXECUTION_AUTH_TOKEN!=='FUTURE_BILATERAL_AUTH')throw new Error('invalid future authorization token');

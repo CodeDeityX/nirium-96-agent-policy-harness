@@ -1,0 +1,1 @@
+const fs=require('fs');const registry=JSON.parse(fs.readFileSync(__dirname+'/registry.json'));function adjudicate(events){return {rows:registry.rows.map(caseId=>({caseId,evidence:events.filter(e=>e.caseId===caseId)}))};}module.exports={adjudicate};

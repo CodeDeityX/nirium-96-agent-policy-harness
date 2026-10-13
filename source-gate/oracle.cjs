@@ -1,0 +1,1 @@
+function reconstruct(events){let E=0,P=0;for(const e of events){if(e.stateAfter){E=e.stateAfter.E;P=e.stateAfter.P;if(E<0||P<0||E+P>400)throw Error('invariant')}}return {E,P,R:400-E-P};}module.exports={reconstruct};

@@ -1,0 +1,1 @@
+const fs=require('fs');const journal=process.argv[2];fs.appendFileSync(journal,JSON.stringify({journalSequence:1,ack:true,state:{E:0,P:0}})+'\n');process.stdout.write(JSON.stringify({pid:process.pid,journal}));
